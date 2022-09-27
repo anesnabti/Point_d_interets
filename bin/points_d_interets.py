@@ -11,111 +11,121 @@ import numpy as np
 import cv2
 from scipy import ndimage
 import matplotlib.pyplot as plt
+import sys
+import scipy.signal as sig
+from skimage.color import rgb2gray
+
 
 
 class Points_d_interets :
 
     def __init__ (self, IMAGE) : 
         """ taking an RGB image opened by opencv library and convert it to a gray image """
-        self.I = cv2.cvtColor(IMAGE, cv2.COLOR_BGR2GRAY)       # convert to Gray image    
+        self.I = np.float32(rgb2gray(IMAGE))       # convert to Gray image    
         self.img = np.copy(IMAGE)                             # create a copy of our image , it will be used to put points of inerest on the image                     
         
 
     def gradient (self) : 
-        #self.I = cv2.GaussianBlur(self.I, (3,3),0)
-        dx = np.array([[1,0,-1], [2,0,-2], [1,0,-1]])     # kernel to compute Iy    
-        #Ix = cv2.Sobel(self.I, cv2.CV_64F, 1,0, ksize =3)
-        dy = np.array([[1,2,1], [0,0,0], [-1,-2,-1]])     # kernel to compute Ix
-        Ix = ndimage.convolve(self.I, dx)                 # Ix
-        Iy = ndimage.convolve(self.I, dy)                 # Iy
-        #Iy = cv2.Sobel(self.I, cv2.CV_64F, 0,1, ksize =3)
-        Ixx = np.square (Ix)                              # Ix**2
-        Iyy = np.square(Iy)                               # Iy**2   
+
+        Ix  = np.gradient(self.I, axis = 1)
+        Iy = np.gradient(self.I, axis = 0)
+        Ixx = Ix**2                              # Ix**2
+        Iyy = Iy**2                               # Iy**2   
         Ixy = Ix * Iy
         return Ixx, Iyy, Ixy
 
+    def gauss(self, l=3, sig=3.):
+        """\
+        creates gaussian kernel with side length `l` and a sigma of `sig`
+        """
+        ax = np.linspace(-(l - 1) / 2., (l - 1) / 2., l)
+        gauss = np.exp(-0.5 * np.square(ax) / np.square(sig))
+        kernel = np.outer(gauss, gauss)
+        return np.array(kernel / np.sum(kernel))
 
 
-    def harris_detector (self, window, window_size) :
+    def harris_detector (self, window) :
         """ l'idée est de donner à cette méthode le nom de la fentre souhaitée puis elle appliquera la détéction des coins """
-        height = self.I.shape[0]   #.shape[0] outputs height 
-        width = self.I.shape[1]
-        matrix_R = np.zeros((height,width))
-
+        
         Ixx, Iyy, Ixy = self.gradient()
         img_result = self.img
+
         if window == 'Gaussiène' : 
-            
-            Ixx = ndimage.gaussian_filter(Ixx, sigma = 1)
-            Iyy = ndimage.gaussian_filter(Iyy, sigma = 1)
-            Ixy = ndimage.gaussian_filter(Ixy, sigma = 1)
-           
-            offset = int(window_size/2)
-            """
-            for y in range(offset, height-offset):
-                for x in range(offset, width-offset):
-                    Sxx = np.sum(Ixx[y-offset:y+1+offset, x-offset:x+1+offset])
-                    Syy = np.sum(Iyy[y-offset:y+1+offset, x-offset:x+1+offset])
-                    Sxy = np.sum(Ixy[y-offset:y+1+offset, x-offset:x+1+offset])
-
-                    M = np.array([[Sxx, Sxy], [Sxy, Syy]])
-                    detM = np.linalg.det(M)
-                    traceM = np.matrix.trace(M)
-                    #detM = Sxx * Syy - Sxy**2
-                    #traceM = Sxx + Syy        
-                    C = detM - 0.05 * (traceM ** 2)
-                    #r = detM - 0.05*traceM**2
-                    matrix_R[y-offset, x-offset]=C
-  
-            cv2.normalize(matrix_R, matrix_R, 0, 1, cv2.NORM_MINMAX)
-            """
-            detM = Ixx * Iyy - Ixy**2
-            traceM = Ixx + Iyy
+            mask = self.gauss()
+            Sxx = sig.convolve2d(Ixx,mask , mode = 'same')
+            Syy = sig.convolve2d(Iyy,mask, mode = 'same')
+            Sxy = sig.convolve2d(Ixy,mask, mode = 'same')
+            nbr = 0
+            detM = Sxx * Syy - Sxy**2
+            traceM = Sxx + Syy
             C = detM - 0.05 * (traceM ** 2)
-            """
-            for y in range(offset, height-offset):
-                for x in range(offset, width-offset):
-                    Sxx = np.sum(Ixx[y-offset:y+1+offset, x-offset:x+1+offset])
-                    Syy = np.sum(Iyy[y-offset:y+1+offset, x-offset:x+1+offset])
-                    Sxy = np.sum(Ixy[y-offset:y+1+offset, x-offset:x+1+offset])
-            #cv2.normalize(C, C, 0, 1, cv2.NORM_MINMAX)
-
-            det = (Sxx * Syy) - (Sxy**2)
-            trace = Sxx + Syy
-            r = det - 0.05*(trace**2)
-           
-            for y in range(offset, height-offset):
-                    for x in range(offset, width-offset):
-                        value=matrix_R[y, x]
-                        if value>0.30 :
-                            cv2.circle(img_result,(x,y),3,(0,255,0))
-            plt.imshow(cv2.cvtColor(img_result, cv2.COLOR_BGR2RGB))
-            plt.show()
-            """
             for row , response in enumerate (C) : 
                 for col , r in enumerate (response) : 
-                    if r > 0 :            # it is a coin 
-                       img_result[row,col] = [255, 0, 0]           # set the point of interest to red color
-                       
+                    if r > 1e-5 :            # it is a coin 
+                       img_result[row,col] = [255, 0,0]           # set the point of interest to red color
+                       nbr = nbr + 1
                     else  : 
-                        return False                                        # Other usecases are used to detect edges ( c > 0) or homogenous region (c = 0)
+                        pass                                       # Other usecases are used to detect edges ( c > 0) or homogenous region (c = 0)
 
-            plt.imshow(img_result)
-            plt.show()
-            return img_result
+            return img_result, nbr
             
+        elif window == "réctangle" : 
+            mask = np.ones((3,3), dtype="uint8")
+
+            Sxx = sig.convolve2d(Ixx, mask, mode = 'same')
+            Syy = sig.convolve2d(Iyy, mask, mode ='same')
+            Sxy = sig.convolve2d(Ixy, mask, mode ='same')
+            det = (Sxx * Syy) - (Sxy**2)
+            trace = Sxx + Syy
+            C = det - 0.05*(trace**2)
+            nbr = 0
+            for row , response in enumerate (C) : 
+                for col , r in enumerate (response) : 
+                    if r > 1e-3 :            # it is a coin 
+                        img_result[row,col] = [255, 0,0]           # set the point of interest to red color
+                        nbr = nbr + 1
+            else  : 
+                pass 
+
+            return img_result, nbr
+        
         else : 
-            pass
+            print("Vous êtes trompé de fentres, merci de choisir Gaussiènne ou réctangle")
+            sys.exit()   
 
+
+    def harris_by_cv2 (self,k) : 
+
+        img_result = self.img
+        dst = cv2.cornerHarris(self.I,2,3,k)
+        #result is dilated for marking the corners, not important
+        dst = cv2.dilate(dst,None)
+        # Threshold for an optimal value, it may vary depending on the image.
+        img_result [dst>0.01*dst.max()]=[0,0,255]
+        return img_result
     
-    def plot_image (self, image_to_show) : 
-       #  This function is used to show  images 
+    def harris_by_cv2_k (self,tab) : 
+        tab_of_figure = [[]]
+        for k in tab : 
+            tab_of_figure.append(self.harris_by_cv2(k))
 
+        return np.array((tab_of_figure)) 
+    
+    def plot_image (self, image_to_show,title) : 
+        # This function is used to show  images 
+        plt.figure (3)
+        plt.title(title)
         plt.imshow(image_to_show)
         plt.show()
-        #cv2.imshow ("Points_of_interest_by_harris_detector", image_to_show)
-        #cv2.waitKey(0)
-    
+
+    def plot_multiple_images (self, table_of_images, tab) : 
+        
+        for i in range (1,len(table_of_images) - 1) :
+            plt.imshow(table_of_images[i])
+            plt.title(f"k = {tab[i]} ")
+            plt.show()
+
+        
 
                     
 
