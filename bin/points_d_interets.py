@@ -60,6 +60,7 @@ class Points_d_interets :
             detM = Sxx * Syy - Sxy**2
             traceM = Sxx + Syy
             C = detM - 0.05 * (traceM ** 2)
+            
             for row , response in enumerate (C) : 
                 for col , r in enumerate (response) : 
                     if r > 1e-5 :            # it is a coin 
@@ -68,7 +69,7 @@ class Points_d_interets :
                     else  : 
                         pass                                       # Other usecases are used to detect edges ( c > 0) or homogenous region (c = 0)
 
-            return img_result
+            return img_result, C
             
         elif window == "réctangle" : 
             img_result = np.copy(self.img)
@@ -88,7 +89,7 @@ class Points_d_interets :
             else  : 
                 pass                                               # Other usecases are used to detect edges ( c > 0) or homogenous region (c = 0)  
 
-            return img_result
+            return img_result, C
         
         else : 
             print("Vous êtes trompé de fentres, merci de choisir Gaussiènne ou réctangle")
@@ -169,7 +170,36 @@ class Points_d_interets :
         plt.axis('off')
         plt.title(title3)
         plt.show()
+
+    
+    def suppression_of_non_maximas (self, C) : 
+        img_result = np.copy(self.img)
+        n, m = C.shape[0], C.shape[1]
+        nbr = 0
+        for i in range (1,n-1) : 
+            for j in range (1,m-1) :
+                #if C[i,j] < C[i-1, j-1] or C[i,j] < C[i+1, j+1] or C[i,j] < C[i+1, j-1] or C[i,j] < C[i-1, j+1] or C[i,j] < C[i, j+1] or C[i,j] < C[i, j-1] or C[i,j] < C[i+1, j] or C[i,j] < C[i-1, j] : 
+                if C[i,j] < max([C[i-1, j-1], C[i+1, j+1], C[i+1, j-1], C[i-1, j+1], C[i, j+1], C[i, j-1], C[i+1, j], C[i-1, j]]) :
+                    C[i,j] = 0
         
+
+        for row , response in enumerate (C) : 
+            for col , r in enumerate (response) : 
+                if r > 1e-5 :            # it is a coin 
+                    img_result[row,col] = [255, 0,0]           # set the point of interest to red color
+                    nbr = nbr + 1
+
+        fig = plt.figure( figsize = (8,5))
+        fig.add_subplot(1,2,1)
+        plt.imshow(img_result)
+        plt.axis('off')
+        plt.title(f"nombre de points d'intérets = {nbr} - Suppression des non maximas")
+        
+        fig.add_subplot(1,2,2)
+        plt.imshow(self.harris_by_cv2(0.05)[0])
+        plt.axis('off')
+        plt.title(f"nombre de points d'intérets = {self.harris_by_cv2(0.05)[1]} - Harris" )
+        plt.show()
 
 
 
