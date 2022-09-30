@@ -200,7 +200,47 @@ class Points_d_interets :
         plt.axis('off')
         plt.title(f"nombre de points d'intérets = {self.harris_by_cv2(0.05)[1]} - Harris" )
         plt.show()
+        
 
+    def fast_detector(self, n , t = 0.5 ):
+        img_gray =  self.I
+        img_gray = cv2.resize(img_gray,(img_gray.shape[0] // 2,img_gray.shape[1] // 2))
+        #im = cv2.resize(self.img,(self.img.shape[0] // 2,self.img.shape[1] // 2))
+        im = self.img
+        height = img_gray.shape[0]    
+        width = img_gray.shape[1]
+        dy = [-3,-3,-2,-1,0,1,2,3,3,3,2,1,0,-1,-2,-3]
+        dx = [0,1,2,3,3,3,2,1,0,-1,-2,-3,-3,-3,-2,-1]
+        L = np.array([])
+        
+        # parcours de l'image
+        for row in range(height):
+            for col in range (width):
+                
+                sup = img_gray[row,col] + t
+                inf = img_gray[row,col] - t
+                I = [0]*16
+                #recuperation des voisins du pixel
+                for i in range(16):
+                    r = row + dy[i]
+                    c = col + dx [i]
+                    if 0<=r<height and 0<=c<width:    
+                        I[i] = img_gray[r,c]
+                # verifier les n pixels consécutifs
+                if (sup<I[0]<inf and sup<I[8]<inf) or(sup<I[4]<inf and sup<I[12]<inf):
+                     im[row,col] = [255,0,0]
+                else:
+                    
+                    for k in range(16):    
+                        L = np.roll(I,-k)[0:n]
+                        #sup = img[row,col] + t
+                        #inf = img[row,col] - t
+                        # si la condition est vérifier on marque avec du rouge
+                        if  np.min(L) > sup or np.max(L) < inf :
+                            im[row,col] = [255,0,0]
+                        
+        
+        return (im)
 
 
 
