@@ -51,7 +51,7 @@ image_harris_gauss, C2 = PI.harris_detector('Gaussiène')                       
 # P_rotate = Points_d_interets(I_rotate)
 #image_harris_rotate, C3 = P_rotate.harris_detector('réctangle')                             # Harris detector by rectangular window
 # image_harris_gauss_rotate, C4 = P_rotate.harris_detector('Gaussiène')                        # Harris detector by gaussian window  
-
+#image_fast = PI.fast_detector(8)
 
 # # ----------------- Plots -----------------#
 # PI.plot_image(image_harris,'image_harris_réctangle_window')
@@ -62,7 +62,7 @@ PI.plot_k_impact(k_values)
 
 #PI.compare_methods (image_harris, image_harris_rotate, image_harris_gauss_rotate, "image_originale", "harris_réctangle", "harris_gaussiène")
 
-
+#PI.plot_image(image_fast, 'fast_detector')
 PI.suppression_of_non_maximas(C2)
 
 
