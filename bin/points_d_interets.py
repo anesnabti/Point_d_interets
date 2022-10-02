@@ -193,7 +193,7 @@ class Points_d_interets :
         fig.add_subplot(1,2,1)
         plt.imshow(img_result)
         plt.axis('off')
-        plt.title(f"nombre de points d'intérets = {nbr} - Suppression des non maximas")
+        plt.title(f"nombre de points d'intérets = {nbr} - Suppression des non maximas HARRIS")
         
         fig.add_subplot(1,2,2)
         plt.imshow(self.harris_by_cv2(0.05)[0])
@@ -201,10 +201,51 @@ class Points_d_interets :
         plt.title(f"nombre de points d'intérets = {self.harris_by_cv2(0.05)[1]} - Harris" )
         plt.show()
         
+        
+        
+    def suppression_of_non_maximas_fast (self, C) : 
+        img_result = np.copy(self.img)
+        n, m = C.shape[0], C.shape[1]
+        nbr = 0
+        for i in range (1,n-1) : 
+            for j in range (1,m-1) :
+                #if C[i,j] < C[i-1, j-1] or C[i,j] < C[i+1, j+1] or C[i,j] < C[i+1, j-1] or C[i,j] < C[i-1, j+1] or C[i,j] < C[i, j+1] or C[i,j] < C[i, j-1] or C[i,j] < C[i+1, j] or C[i,j] < C[i-1, j] : 
+                if C[i,j] < max([C[i-1, j-1], C[i+1, j+1], C[i+1, j-1], C[i-1, j+1], C[i, j+1], C[i, j-1], C[i+1, j], C[i-1, j]]) :
+                    C[i,j] = 0
+        
 
-    def fast_detector(self, n , t = 0.5 ):
+        for row , response in enumerate (C) : 
+            for col , r in enumerate (response) : 
+                if r > 3.7 :            # it is a coin 
+                    img_result[row,col] = [255, 0,0]           # set the point of interest to red color
+                    nbr = nbr + 1
+
+        fig = plt.figure( figsize = (8,5))
+        fig.add_subplot(1,2,1)
+        plt.imshow(img_result)
+        plt.axis('off')
+        plt.title(f"nombre de points d'intérets = {nbr} - Suppression des non maximas FAST")
+        
+        fig.add_subplot(1,2,2)
+        plt.imshow(self.cv2_fast_detector(50,2)[0])
+        plt.axis('off')
+        plt.title(f"nombre de points d'intérets = {self.cv2_fast_detector()[1]} - Fast" )
+        plt.show()        
+        
+
+    def cv2_fast_detector(self,t = 50, n = 2):
+        copy = np.copy(self.img)
+        fast = cv2.FastFeatureDetector_create(t,False,n)
+        # find and draw the keypoints
+        kp = fast.detect(copy,None)
+        img2 = cv2.drawKeypoints(copy, kp, None, color=(255,0,0))
+        
+        return cv2.drawKeypoints(copy, kp, None, color=(255,0,0)), len(kp)
+
+
+    def fast_detector(self, n , t = 0.04 ):
         img_gray =  self.I
-        img_gray = cv2.resize(img_gray,(img_gray.shape[0] // 2,img_gray.shape[1] // 2))
+        #img_gray = cv2.resize(img_gray,(img_gray.shape[0] // 2,img_gray.shape[1] // 2))
         #im = cv2.resize(self.img,(self.img.shape[0] // 2,self.img.shape[1] // 2))
         im = self.img
         height = img_gray.shape[0]    
@@ -212,10 +253,10 @@ class Points_d_interets :
         dy = [-3,-3,-2,-1,0,1,2,3,3,3,2,1,0,-1,-2,-3]
         dx = [0,1,2,3,3,3,2,1,0,-1,-2,-3,-3,-3,-2,-1]
         L = np.array([])
-        
+        C = np.zeros(img_gray.shape)
         # parcours de l'image
-        for row in range(height):
-            for col in range (width):
+        for row in range(3,height-3):
+            for col in range (3,width-3):
                 
                 sup = img_gray[row,col] + t
                 inf = img_gray[row,col] - t
@@ -224,23 +265,23 @@ class Points_d_interets :
                 for i in range(16):
                     r = row + dy[i]
                     c = col + dx [i]
-                    if 0<=r<height and 0<=c<width:    
-                        I[i] = img_gray[r,c]
+                    I[i] = img_gray[r,c]
                 # verifier les n pixels consécutifs
                 if (sup<I[0]<inf and sup<I[8]<inf) or(sup<I[4]<inf and sup<I[12]<inf):
+                     C[row,col] = abs(np.sum(img_gray[row,col] - I))
                      im[row,col] = [255,0,0]
+                     
                 else:
-                    
+                    C[row,col] = abs(np.sum(img_gray[row,col] - I))
+                    # calcul du seuil pour la suppression des nonmaxima
                     for k in range(16):    
                         L = np.roll(I,-k)[0:n]
-                        #sup = img[row,col] + t
-                        #inf = img[row,col] - t
                         # si la condition est vérifier on marque avec du rouge
                         if  np.min(L) > sup or np.max(L) < inf :
                             im[row,col] = [255,0,0]
                         
         
-        return (im)
+        return im , C
 
 
 
