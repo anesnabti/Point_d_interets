@@ -244,10 +244,10 @@ class Points_d_interets :
 
 
     def fast_detector(self, n , t = 0.04 ):
-        img_gray =  self.I
+        img_gray =  np.copy(self.I)
         #img_gray = cv2.resize(img_gray,(img_gray.shape[0] // 2,img_gray.shape[1] // 2))
         #im = cv2.resize(self.img,(self.img.shape[0] // 2,self.img.shape[1] // 2))
-        im = self.img
+        im = np.copy(self.img)
         height = img_gray.shape[0]    
         width = img_gray.shape[1]
         dy = [-3,-3,-2,-1,0,1,2,3,3,3,2,1,0,-1,-2,-3]
