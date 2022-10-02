@@ -51,7 +51,7 @@ image_harris_gauss, C2 = PI.harris_detector('Gaussiène')                       
 # P_rotate = Points_d_interets(I_rotate)
 #image_harris_rotate, C3 = P_rotate.harris_detector('réctangle')                             # Harris detector by rectangular window
 # image_harris_gauss_rotate, C4 = P_rotate.harris_detector('Gaussiène')                        # Harris detector by gaussian window  
-# image_fast, Cf = PI.fast_detector(9)
+image_fast, Cf = PI.fast_detector(9)
 
 # # ----------------- Plots -----------------#
 # PI.plot_image(image_harris,'image_harris_réctangle_window')
@@ -64,7 +64,7 @@ image_harris_gauss, C2 = PI.harris_detector('Gaussiène')                       
 image_fastcv2 , nbr = PI.cv2_fast_detector()
 PI.plot_image(image_fastcv2,"fast_detector_cv2")
 # PI.plot_image(image_fast, 'fast_detector')
-# PI.suppression_of_non_maximas_fast(Cf)
+PI.suppression_of_non_maximas_fast(Cf)
 #PI.suppression_of_non_maximas(C2)
 
 
