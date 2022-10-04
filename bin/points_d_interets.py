@@ -314,9 +314,9 @@ class Points_d_interets :
 
 
 
-    def matching_blocs (self, descriptor2, pid_cord2) : 
+    def matching_blocs (self , descriptor1, descriptor2, pid_cord2) : 
 
-        descriptor1 = self.simple_descriptor(3)
+        #descriptor1 = self.simple_descriptor(n)
         points_of_matching = []
         pid_cord = np.array(self.suppression_of_non_maximas (self.harris_detector ('Gaussiène')[1])[0])
 
@@ -342,19 +342,17 @@ class Points_d_interets :
 
             if pos_min2 == i: 
                 points_of_matching.append((pid_cord[pos_min2], pid_cord2[pos_min]))
-            
-
-            
+  
         return np.array(points_of_matching)
 
 
 
-    def plot_bloc_matching (self, P2, descriptor2,pid_cord2) : 
+    def plot_bloc_matching (self, P2, descriptor1, descriptor2, pid_cord2) : 
 
         img_originalle = np.copy(self.img)
         P3 = np.copy((P2))
         #img_conca = cv2.hconcat([img_originalle, P2])
-        points_of_matching = self.matching_blocs(descriptor2, pid_cord2)
+        points_of_matching = self.matching_blocs(descriptor1, descriptor2, pid_cord2)
         output_img = np.concatenate((img_originalle, P3), axis = 1)
         offset = [img_originalle.shape[1],0]
         # r, c = img_originalle.shape[:2]
@@ -376,7 +374,7 @@ class Points_d_interets :
             cv2.line(img_result, (int(cord_p1[0]),int(cord_p1[1]) ), (int(cord_p2[0]) + offset[0], int(cord_p2[1])), (0, 255, 255), 1)
         #for i in range (len(points_of_matching)) : 
             plt.imshow(img_result)
-    #plt.plot([points_of_matching[50][0][0], img_originalle.shape[1] + points_of_matching[50][1][0]] , [points_of_matching[50][0][1], points_of_matching[50][1][1]]  )
+        #plt.plot([points_of_matching[50][0][0], img_originalle.shape[1] + points_of_matching[50][1][0]] , [points_of_matching[50][0][1], points_of_matching[50][1][1]]  )
             plt.show()
         
                 

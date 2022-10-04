@@ -4,6 +4,7 @@
 """ Ce Fichier est le main """
 
 ########### Import libraries #############
+from tkinter import N
 import warnings
 import cv2
 from points_d_interets import * 
@@ -22,7 +23,7 @@ cible_path2 = '\pics\P2.jpg'
 path = actual_path + cible_path
 
 PATH2 = actual_path + cible_path2
-
+n = 5
 
 
 # read the images 
@@ -65,14 +66,14 @@ image_harris_gauss, C2 = PI.harris_detector('Gaussiène')                       
 #PI.suppression_of_non_maximas_fast(Cf)
 #pi_cord, nbr, harris_maximas = PI.suppression_of_non_maximas(C2)
 # PI.plot_harris_suppression_non_maximas ()
-descriptor = PI.simple_descriptor (3) 
-descriptor2 = PI_2.simple_descriptor(3)
+descriptor = PI.simple_descriptor (n) 
+descriptor2 = PI_2.simple_descriptor(n)
 #print(descriptor2.shape)
 
 pid_cord2 = np.array(PI_2.suppression_of_non_maximas(PI_2.harris_detector('Gaussiène')[1])[0])
 
-points_of_matching = PI.matching_blocs(descriptor2, pid_cord2)
+points_of_matching = PI.matching_blocs(descriptor, descriptor2, pid_cord2)
 
 print (points_of_matching.shape)
 
-PI.plot_bloc_matching(P2, descriptor2, pid_cord2)
+PI.plot_bloc_matching(P2,descriptor, descriptor2, pid_cord2)
