@@ -15,6 +15,7 @@ import sys
 import scipy.signal as sig
 from skimage.color import rgb2gray
 from scipy.spatial import distance
+from scipy.ndimage import convolve
 #from main import pid_cord2
 
 
@@ -252,45 +253,56 @@ class Points_d_interets :
         return cv2.drawKeypoints(copy, kp, None, color=(255,0,0)), len(kp)
 
 
-    def fast_detector(self, n , t = 0.04 ):
+    def fast_detector(self, n = 9, t = 60 ):
+        t = t/255
         img_gray =  np.copy(self.I)
-        #img_gray = cv2.resize(img_gray,(img_gray.shape[0] // 2,img_gray.shape[1] // 2))
-        #im = cv2.resize(self.img,(self.img.shape[0] // 2,self.img.shape[1] // 2))
         im = np.copy(self.img)
         height = img_gray.shape[0]    
         width = img_gray.shape[1]
-        dy = [-3,-3,-2,-1,0,1,2,3,3,3,2,1,0,-1,-2,-3]
-        dx = [0,1,2,3,3,3,2,1,0,-1,-2,-3,-3,-3,-2,-1]
-        L = np.array([])
-        C = np.zeros(img_gray.shape)
-        # parcours de l'image
-        for row in range(3,height-3):
-            for col in range (3,width-3):
+        C = np.zeros((height,width))
+        # coordonnées relatives des voisins
+        dx = np.array([-3,-3,-2,-1,0,1,2,3,3,3,2,1,0,-1,-2,-3])
+        dy = np.array([0,1,2,3,3,3,2,1,0,-1,-2,-3,-3,-3,-2,-1])
+        I = [0]*16
+        x = np.arange(3,height-3,1)
+        y = np.arange(3,width-3,1)
+        # grille des coordonnées
+        yy , xx = np.meshgrid(y,x)
+        xx, yy = xx.flatten().reshape(-1,1), yy.flatten().reshape(-1,1)
+        # coordonnées linéarisées
+        idxN = xx * width + yy
+        idxV = dx*width + dy
+        idx = idxN + idxV
+        imgN = img_gray.flatten()[idx]
+        imgP = (img_gray[3:-3, 3:-3].flatten()).reshape(-1,1)
+        d1,d2= np.where(imgN > imgP + t,1,0), np.where(imgN < imgP - t,1,0)
+        # mask pour convolution
+        mask = np.ones((1,n))
+        # nbr de pixel successifs 
+        d1C = convolve(d1, mask, mode="wrap")
+        d2C = convolve(d2, mask, mode="wrap")
+        # 1 si nous avons n pixel successifs
+        d1 = np.where(d1C==n,1,0)
+        d1 = np.sum(d1,axis = 1)
+        d2 = np.where(d2C==n,1,0)
+        d2 = np.sum(d2,axis = 1)
+        # extraire les points d'interets
+        for i in range (len(d1)):
+            if d1[i]>0 or d2[i]> 0:  
+                rx = (np.ones((16,1))*xx[i]+dx).astype(dtype = 'int64')[0]
+                ry = (np.ones((16,1))*yy[i]+dy).astype(dtype = 'int64')[0]
+                # id = rx*width +ry
+                for j in range (16):
+                    I[j] = img_gray[rx[j],ry[j]]
+                C[xx[i],yy[i]] = abs(np.sum(img_gray[xx[i],yy[i]] - I))   
                 
-                sup = img_gray[row,col] + t
-                inf = img_gray[row,col] - t
-                I = [0]*16
-                #recuperation des voisins du pixel
-                for i in range(16):
-                    r = row + dy[i]
-                    c = col + dx [i]
-                    I[i] = img_gray[r,c]
-                # verifier les n pixels consécutifs
-                if (sup<I[0]<inf and sup<I[8]<inf) or(sup<I[4]<inf and sup<I[12]<inf):
-                     C[row,col] = abs(np.sum(img_gray[row,col] - I))
-                     im[row,col] = [255,0,0]
-                     
-                else:
-                    C[row,col] = abs(np.sum(img_gray[row,col] - I))
-                    # calcul du seuil pour la suppression des nonmaxima
-                    for k in range(16):    
-                        L = np.roll(I,-k)[0:n]
-                        # si la condition est vérifier on marque avec du rouge
-                        if  np.min(L) > sup or np.max(L) < inf :
-                            im[row,col] = [255,0,0]
+                
+                
+                
+                im[xx[i],yy[i]] = [255,0,0]
                         
         
-        return im , C
+        return im, C
 
     
     def simple_descriptor (self,n) : 
