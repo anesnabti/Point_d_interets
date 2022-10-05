@@ -18,6 +18,7 @@ warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
 path2 = str(pathlib.Path(__file__).parent.resolve())
 actual_path = path2 [: -4]
+
 cible_path = '\pics\P1.jpg'
 cible_path2 = '\pics\P2.jpg'
 path = actual_path + cible_path
@@ -43,14 +44,14 @@ Ixx, Iyy, Ixy = PI.gradient()                                              # com
 k_values = np.array(np.arange (0.04 , 0.06 , 0.002))
 
 # image_harris, C2 = PI.harris_detector('réctangle')                             # Harris detector by rectangular window
-image_harris_gauss, C2 = PI.harris_detector('Gaussiène')                        # Harris detector by gaussian window  
+#image_harris_gauss, C2 = PI.harris_detector('Gaussiène')                        # Harris detector by gaussian window  
 # harris_cv2, nbr = PI.harris_by_cv2(0.05)                                    # Harris already implemented by cv2                  
 
 
 # P_rotate = Points_d_interets(I_rotate)
 #image_harris_rotate, C3 = P_rotate.harris_detector('réctangle')                             # Harris detector by rectangular window
 # image_harris_gauss_rotate, C4 = P_rotate.harris_detector('Gaussiène')                        # Harris detector by gaussian window  
-#image_fast, Cf = PI.fast_detector(9)
+image_fast, Cf = PI.fast_detector(9)
 
 # # ----------------- Plots -----------------#
 # PI.plot_image(image_harris,'image_harris_réctangle_window')
@@ -60,20 +61,20 @@ image_harris_gauss, C2 = PI.harris_detector('Gaussiène')                       
 # PI.compare_methods (image_harris, image_harris_gauss, harris_cv2, "harris_réctangle", "harris_gaussiènne", "harris_cv2")
 
 #PI.compare_methods (image_harris, image_harris_rotate, image_harris_gauss_rotate, "image_originale", "harris_réctangle", "harris_gaussiène")
-#image_fastcv2 , nbr = PI.cv2_fast_detector()
+# image_fastcv2 , nbr = PI.cv2_fast_detector()
 #PI.plot_image(image_fastcv2,"fast_detector_cv2")
 # PI.plot_image(image_fast, 'fast_detector')
-#PI.suppression_of_non_maximas_fast(Cf)
+PI.suppression_of_non_maximas_fast(Cf)
 #pi_cord, nbr, harris_maximas = PI.suppression_of_non_maximas(C2)
 # PI.plot_harris_suppression_non_maximas ()
-descriptor = PI.simple_descriptor (n) 
-descriptor2 = PI_2.simple_descriptor(n)
+# descriptor = PI.simple_descriptor (n) 
+# descriptor2 = PI_2.simple_descriptor(n)
 #print(descriptor2.shape)
 
-pid_cord2 = np.array(PI_2.suppression_of_non_maximas(PI_2.harris_detector('Gaussiène')[1])[0])
+# pid_cord2 = np.array(PI_2.suppression_of_non_maximas(PI_2.harris_detector('Gaussiène')[1])[0])
 
-points_of_matching = PI.matching_blocs(descriptor, descriptor2, pid_cord2)
+# points_of_matching = PI.matching_blocs(descriptor, descriptor2, pid_cord2)
 
-print (points_of_matching.shape)
+# print (points_of_matching.shape)
 
-PI.plot_bloc_matching(P2,descriptor, descriptor2, pid_cord2)
+# PI.plot_bloc_matching(P2,descriptor, descriptor2, pid_cord2)
