@@ -24,7 +24,7 @@ cible_path2 = '\pics\P2.jpg'
 path = actual_path + cible_path
 
 PATH2 = actual_path + cible_path2
-n = 5
+n = 3
 
 
 # read the images 
@@ -63,18 +63,24 @@ image_fast, Cf = PI.fast_detector(9)
 #PI.compare_methods (image_harris, image_harris_rotate, image_harris_gauss_rotate, "image_originale", "harris_réctangle", "harris_gaussiène")
 # image_fastcv2 , nbr = PI.cv2_fast_detector()
 #PI.plot_image(image_fastcv2,"fast_detector_cv2")
-# PI.plot_image(image_fast, 'fast_detector')
-PI.suppression_of_non_maximas_fast(Cf)
+PI.plot_image(image_fast, 'fast_detector')
+#PI.suppression_of_non_maximas_fast(Cf)
 #pi_cord, nbr, harris_maximas = PI.suppression_of_non_maximas(C2)
 # PI.plot_harris_suppression_non_maximas ()
-# descriptor = PI.simple_descriptor (n) 
-# descriptor2 = PI_2.simple_descriptor(n)
+descriptor = PI.simple_descriptor (n) 
+descriptor2 = PI_2.simple_descriptor(n)
 #print(descriptor2.shape)
 
-# pid_cord2 = np.array(PI_2.suppression_of_non_maximas(PI_2.harris_detector('Gaussiène')[1])[0])
+#pid_cord2 = np.array(PI_2.suppression_of_non_maximas(PI_2.harris_detector('Gaussiène')[1])[0])
+pid_cord2, img_fast_suppression, nbr_fast = np.array(PI_2. suppression_of_non_maximas_fast (PI_2.fast_detector()[1]))
+pid2, img_fast_suppression2, nbr_fast2 = np.array(PI. suppression_of_non_maximas_fast (Cf))
 
-# points_of_matching = PI.matching_blocs(descriptor, descriptor2, pid_cord2)
 
-# print (points_of_matching.shape)
+PI.plot_image (img_fast_suppression2, f"Nombres de points d'interets avec suppression = {nbr_fast2}")
 
-# PI.plot_bloc_matching(P2,descriptor, descriptor2, pid_cord2)
+points_of_matching = PI.matching_blocs(descriptor, descriptor2, pid_cord2)
+
+print (points_of_matching.shape)
+
+PI.plot_bloc_matching(P2,descriptor, descriptor2, pid_cord2)
+
