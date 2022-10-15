@@ -212,36 +212,7 @@ class Points_d_interets :
         plt.show()
         
         
-        
-    def suppression_of_non_maximas_fast (self, C) : 
-        img_result = np.copy(self.img)
-        n, m = C.shape[0], C.shape[1]
-        nbr = 0
-        for i in range (1,n-1) : 
-            for j in range (1,m-1) :
-                #if C[i,j] < C[i-1, j-1] or C[i,j] < C[i+1, j+1] or C[i,j] < C[i+1, j-1] or C[i,j] < C[i-1, j+1] or C[i,j] < C[i, j+1] or C[i,j] < C[i, j-1] or C[i,j] < C[i+1, j] or C[i,j] < C[i-1, j] : 
-                if C[i,j] < max([C[i-1, j-1], C[i+1, j+1], C[i+1, j-1], C[i-1, j+1], C[i, j+1], C[i, j-1], C[i+1, j], C[i-1, j]]) :
-                    C[i,j] = 0
-        
-
-        for row , response in enumerate (C) : 
-            for col , r in enumerate (response) : 
-                if r > 3.7 :            # it is a coin 
-                    img_result[row,col] = [255, 0,0]           # set the point of interest to red color
-                    nbr = nbr + 1
-
-        fig = plt.figure( figsize = (8,5))
-        fig.add_subplot(1,2,1)
-        plt.imshow(img_result)
-        plt.axis('off')
-        plt.title(f"nombre de points d'intérets = {nbr} - Suppression des non maximas FAST")
-        
-        fig.add_subplot(1,2,2)
-        plt.imshow(self.cv2_fast_detector(50,2)[0])
-        plt.axis('off')
-        plt.title(f"nombre de points d'intérets = {self.cv2_fast_detector()[1]} - Fast" )
-        plt.show()        
-        
+   
 
     def cv2_fast_detector(self,t = 50, n = 2):
         copy = np.copy(self.img)
@@ -254,6 +225,7 @@ class Points_d_interets :
 
 
     def fast_detector(self, n = 9, t = 60 ):
+
         t = t/255
         img_gray =  np.copy(self.I)
         im = np.copy(self.img)
@@ -304,6 +276,36 @@ class Points_d_interets :
         
         return im, C
 
+
+     
+    def suppression_of_non_maximas_fast (self, C) : 
+        img_result = np.copy(self.img)
+        n, m = C.shape[0], C.shape[1]
+        nbr = 0
+        for i in range (1,n-1) : 
+            for j in range (1,m-1) :
+                #if C[i,j] < C[i-1, j-1] or C[i,j] < C[i+1, j+1] or C[i,j] < C[i+1, j-1] or C[i,j] < C[i-1, j+1] or C[i,j] < C[i, j+1] or C[i,j] < C[i, j-1] or C[i,j] < C[i+1, j] or C[i,j] < C[i-1, j] : 
+                if C[i,j] < max([C[i-1, j-1], C[i+1, j+1], C[i+1, j-1], C[i-1, j+1], C[i, j+1], C[i, j-1], C[i+1, j], C[i-1, j]]) :
+                    C[i,j] = 0
+        
+        cord = []
+        for row , response in enumerate (C) : 
+            for col , r in enumerate (response) : 
+                if r > 3.7 :            # it is a coin 
+                    img_result[row,col] = [255, 0,0]           # set the point of interest to red color
+                    nbr = nbr + 1
+                    cord.append((row,col))
+
+
+        
+        # fig.add_subplot(1,2,2)
+        # plt.imshow(self.cv2_fast_detector(50,2)[0])
+        # plt.axis('off')
+        # plt.title(f"nombre de points d'intérets = {self.cv2_fast_detector()[1]} - Fast" )
+        # plt.show()        
+        
+        return cord,img_result, nbr
+
     
     def simple_descriptor (self,n) : 
 
@@ -311,10 +313,11 @@ class Points_d_interets :
         height , width = img_copy.shape[0], img_copy.shape[1]
         neighboors = []
         
-        pdi_cord = np.array(self.suppression_of_non_maximas (self.harris_detector ('Gaussiène')[1])[0])
+        #pdi_cord = np.array(self.suppression_of_non_maximas (self.harris_detector ('Gaussiène')[1])[0])
+        pdi_cord = np.array(self. suppression_of_non_maximas_fast (self.fast_detector(9,60)[1])[0])
         for i in range (len(pdi_cord)) : 
             ligne , col = pdi_cord[i]
-            h_min , h_max, w_min, w_max = ligne - n , (ligne + n + 1) , (col - n ), (n + col + 1)
+            h_min , h_max, w_min, w_max = (ligne - n) , (ligne + n + 1) , (col - n ), (n + col + 1)
             if (ligne - n > 0) and (ligne + n < height-1) and (col - n > 0) and (col + n < width-1) : 
                 neighboors.append(img_copy[h_min : h_max , w_min : w_max ].flatten('K'))
 
@@ -326,34 +329,35 @@ class Points_d_interets :
 
 
 
+
     def matching_blocs (self , descriptor1, descriptor2, pid_cord2) : 
 
-        #descriptor1 = self.simple_descriptor(n)
         points_of_matching = []
-        pid_cord = np.array(self.suppression_of_non_maximas (self.harris_detector ('Gaussiène')[1])[0])
+        #pid_cord = np.array(self.suppression_of_non_maximas (self.harris_detector ('Gaussiène')[1])[0])
+        pid_cord = np.array(self. suppression_of_non_maximas_fast (self.fast_detector()[1])[0])
 
+        self.D = []
+        
         for i in range (descriptor1.shape[1]) : 
-            dist , dist2 = [], []
-            for j in range (descriptor2.shape[1]) : 
-                # dist.append(distance.euclidean(descriptor1[:,i], descriptor2[:,j]))
-                dist.append(np.linalg.norm(descriptor1[:,i] - descriptor2[:,j]))
+            dist = []
+            for j in range (descriptor2.shape[1]):
+                #dist.append(np.linalg.norm(descriptor1[:,i] - descriptor2[:,j]))
+                dist.append(distance.euclidean(descriptor1[:,i] , descriptor2[:,j]))
 
-            #dist = np.array(np.array(dist))
-            min = np.min(np.array(dist))
-            pos_min = np.argmin(np.array(dist))
+            dist = np.array(dist,dtype=np.float32)
+            pos_min = np.argmin(dist)
+            d1 = dist[pos_min]
 
-            for k in range(descriptor1.shape[1]) : 
-                #dist2.append(distance.euclidean(descriptor2[:,pos_min], descriptor1[:,k] ))
-                dist2.append(np.linalg.norm(descriptor2[:,pos_min] - descriptor1[:,k] ))
-            #dist2 = np.array(dist2)
-            min2 = np.min(np.array(dist2))
-            pos_min2 = np.argmin(np.array(dist2))
+            dist[pos_min] = np.inf
+            
+            pos_min2 = np.argmin(dist)
+            d2 = dist[pos_min2]
+            
+            
+            if d1/d2 < 0.45 : 
+                self.D.append(d1/d2)
+                points_of_matching.append((pid_cord[i], pid_cord2[pos_min]))
 
-            # if min2 < min :
-            #     break
-
-            if pos_min2 == i: 
-                points_of_matching.append((pid_cord[pos_min2], pid_cord2[pos_min]))
   
         return np.array(points_of_matching)
 
@@ -363,31 +367,20 @@ class Points_d_interets :
 
         img_originalle = np.copy(self.img)
         P3 = np.copy((P2))
-        #img_conca = cv2.hconcat([img_originalle, P2])
         points_of_matching = self.matching_blocs(descriptor1, descriptor2, pid_cord2)
         output_img = np.concatenate((img_originalle, P3), axis = 1)
         offset = [img_originalle.shape[1],0]
-        # r, c = img_originalle.shape[:2]
-        # r1, c1 = P3.shape[:2]
-
-        # Création d'une image vide de taille = shape(Image1) + shape(Image2)
-        # output_img = np.zeros((max([r, r1]), c+c1, 3), dtype='uint8')
-        # Concaténer les deux images dans l'image crée
-
-        # output_img[:r, :c, :] = np.dstack([img_originalle, img_originalle, img_originalle])
-        # output_img[:r1, c:c+c1, :] = np.dstack([P3, P3, P3])
+        img_result = np.copy(output_img)
         for n in range (len(points_of_matching)) : 
-            img_result = np.copy(output_img)
-
+            # img_result = np.copy(output_img)
+            print(self.D[n])
             cord_p1 = np.array(points_of_matching[n][0])[::-1] 
             cord_p2 = np.array(points_of_matching[n][1])[::-1]
             cv2.circle (img_result, cord_p1, 3, (255,0,0), 3)
             cv2.circle (img_result, cord_p2 + offset, 3, (255,0,0), 3)
             cv2.line(img_result, (int(cord_p1[0]),int(cord_p1[1]) ), (int(cord_p2[0]) + offset[0], int(cord_p2[1])), (0, 255, 255), 1)
-        #for i in range (len(points_of_matching)) : 
-            plt.imshow(img_result)
-        #plt.plot([points_of_matching[50][0][0], img_originalle.shape[1] + points_of_matching[50][1][0]] , [points_of_matching[50][0][1], points_of_matching[50][1][1]]  )
-            plt.show()
+        plt.imshow(img_result)
+        plt.show()
         
                 
 
