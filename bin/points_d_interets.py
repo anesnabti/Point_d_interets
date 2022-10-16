@@ -2,7 +2,7 @@
 
 
 """ 
-Ce script représente la définition de la classe qui continet tous les méthodes utilisés pour résoudre le TP
+Ce script représente la définition de la classe qui contient tous les méthodes utilisés pour résoudre le TP
 """
 
 ############################# Importation des bibliothèques #######################
@@ -16,6 +16,7 @@ import scipy.signal as sig
 from skimage.color import rgb2gray
 from scipy.spatial import distance
 from scipy.ndimage import convolve
+from math import sqrt
 #from main import pid_cord2
 
 
@@ -227,7 +228,7 @@ class Points_d_interets :
 
     def fast_detector(self, n = 9, t = 60 ):
 
-        t = t/255
+        t = t/255                                   # Seuil
         img_gray =  np.copy(self.I)
         im = np.copy(self.img)
         height = img_gray.shape[0]    
@@ -254,7 +255,7 @@ class Points_d_interets :
         # nbr de pixel successifs 
         d1C = convolve(d1, mask, mode="wrap")
         d2C = convolve(d2, mask, mode="wrap")
-        # 1 si nous avons n pixel successifs
+        # 1 si nous avons n pixel successifs qui vérifient la condition
         d1 = np.where(d1C==n,1,0)
         d1 = np.sum(d1,axis = 1)
         d2 = np.where(d2C==n,1,0)
@@ -264,12 +265,9 @@ class Points_d_interets :
             if d1[i]>0 or d2[i]> 0:  
                 rx = (np.ones((16,1))*xx[i]+dx).astype(dtype = 'int64')[0]
                 ry = (np.ones((16,1))*yy[i]+dy).astype(dtype = 'int64')[0]
-                # id = rx*width +ry
                 for j in range (16):
                     I[j] = img_gray[rx[j],ry[j]]
                 C[xx[i],yy[i]] = abs(np.sum(img_gray[xx[i],yy[i]] - I))   
-                
-                
                 
                 
                 im[xx[i],yy[i]] = [255,0,0]
@@ -285,7 +283,6 @@ class Points_d_interets :
         nbr = 0
         for i in range (1,n-1) : 
             for j in range (1,m-1) :
-                #if C[i,j] < C[i-1, j-1] or C[i,j] < C[i+1, j+1] or C[i,j] < C[i+1, j-1] or C[i,j] < C[i-1, j+1] or C[i,j] < C[i, j+1] or C[i,j] < C[i, j-1] or C[i,j] < C[i+1, j] or C[i,j] < C[i-1, j] : 
                 if C[i,j] < max([C[i-1, j-1], C[i+1, j+1], C[i+1, j-1], C[i-1, j+1], C[i, j+1], C[i, j-1], C[i+1, j], C[i-1, j]]) :
                     C[i,j] = 0
         
@@ -295,15 +292,7 @@ class Points_d_interets :
                 if r > 3.7 :            # it is a coin 
                     img_result[row,col] = [255, 0,0]           # set the point of interest to red color
                     nbr = nbr + 1
-                    cord.append((row,col))
-
-
-        
-        # fig.add_subplot(1,2,2)
-        # plt.imshow(self.cv2_fast_detector(50,2)[0])
-        # plt.axis('off')
-        # plt.title(f"nombre de points d'intérets = {self.cv2_fast_detector()[1]} - Fast" )
-        # plt.show()        
+                    cord.append((row,col)) 
         
         return cord,img_result, nbr
 
@@ -334,7 +323,8 @@ class Points_d_interets :
     def matching_blocs (self , descriptor1, descriptor2, pid_cord2) : 
 
         points_of_matching = []
-        #pid_cord = np.array(self.suppression_of_non_maximas (self.harris_detector ('Gaussiène')[1])[0])
+        p1 = []
+        p2 = []
         pid_cord = np.array(self. suppression_of_non_maximas_fast (self.fast_detector()[1])[0])
 
         self.D = []
@@ -358,9 +348,10 @@ class Points_d_interets :
             if d1/d2 < 0.45 : 
                 self.D.append(d1/d2)
                 points_of_matching.append((pid_cord[i], pid_cord2[pos_min]))
-
+                p1.append(pid_cord[i])
+                p2.append(pid_cord2[pos_min])
   
-        return np.array(points_of_matching)
+        return np.array(points_of_matching), np.array(p1), np.array(p2)
 
 
 
@@ -368,7 +359,7 @@ class Points_d_interets :
 
         img_originalle = np.copy(self.img)
         P3 = np.copy((P2))
-        points_of_matching = self.matching_blocs(descriptor1, descriptor2, pid_cord2)
+        points_of_matching, p1, p2 = self.matching_blocs(descriptor1, descriptor2, pid_cord2)
         output_img = np.concatenate((img_originalle, P3), axis = 1)
         offset = [img_originalle.shape[1],0]
         img_result = np.copy(output_img)
@@ -381,6 +372,64 @@ class Points_d_interets :
             cv2.line(img_result, (int(cord_p1[0]),int(cord_p1[1]) ), (int(cord_p2[0]) + offset[0], int(cord_p2[1])), (0, 255, 255), 1)
         plt.imshow(img_result)
         plt.show()
+        
+    def Mat_A(self,points_source, points_dist):
+        num_points = points_source.shape[0]
+        A = []
+        for i in range(num_points):
+            xs, ys = points_source[i][0], points_source[i][1]
+            xt, yt = points_dist[i][0], points_dist[i][1]
+            Ai =  np.array([
+                [xs,ys,1,0, 0, 0, -xt*xs, -xt*ys, -xt],
+                [0, 0, 0,xs,ys,1, -yt*xs, -yt*ys, -yt]])
+            A.append(Ai)
+            
+        return np.concatenate(A, axis=0)
+    
+    def find_homography(self,points_source, points_target):
+        A  = self.Mat_A(points_source, points_target)
+        u, s, vh = np.linalg.svd(A, full_matrices=True)
+        # Solution to H is the last column of V, or last row of V transpose
+        L = vh[-1,:]/vh[-1,-1]
+        homography = L.reshape((3,3))
+        return homography
+    
+    def panorama(self, image):
+        imgs = [self.img, image]
+        stitchy=cv2.Stitcher.create()
+        (dummy,output)=stitchy.stitch(imgs)
+        plt.imshow(output)
+        plt.show()
+    
+    def normalisation(self,points_source, points_target):
+        A_norm = []
+        #n = len(points_source[:][0])
+        n = 5
+        xs, ys = points_source[:][0], points_source[:][1]
+        xt, yt = points_target[:][0], points_target[:][1]
+        moy_xs, moy_ys = np.mean(points_source, axis = 0)
+        moy_xt, moy_yt = np.mean(points_target, axis = 0)
+        sum1 = np.sum((xs-moy_xs)**2 + (ys-moy_ys)**2)
+        sum2 = np.sum((xt-moy_xt)**2 + (yt-moy_yt)**2)
+        s1 = int((sqrt(2)*n)*np.sqrt(sum1))
+        s2 = int((sqrt(2)*n)*np.sqrt(sum2))
+        # T1 = np.array(s1*[[1,0,-moy_xs],[0,1,-moy_ys],[0,0,1/s1]])
+        # T2 = np.array(s2*[[1,0,-moy_xt],[0,1,-moy_yt],[0,0,1/s2]])
+        T1 = s1* np.vstack(([1,0,-moy_xs], [0,1,-moy_ys], [0,0,1/s1]))
+        T2 = s2 * np.vstack(([1,0,-moy_xt], [0,1,-moy_yt], [0,0,1/s2]))
+        ps, pt = np.vstack((points_source.T, np.ones((1,n)))), np.vstack((points_target.T, np.ones((1,n))))
+        
+        ps = T1.dot(ps)
+        pt = T2.dot(pt)
+        A_norm = np.vstack(([np.zeros((1,3)), ps[:,0].T, ps[1,0]*pt[:,0].T], [pt[:,0], np.zeros((1,3)), -ps[0,0]*pt[:,0].T]))
+        for i in range(1,n):
+            Ai = np.vstack(([np.zeros((1,3)), ps[:,i].T, ps[1,i]*pt[:,i].T], [pt[:,i], np.zeros((1,3)), -ps[0,i]*pt[:,i].T]))
+            A_norm = np.vstack((A_norm, Ai))
+
+        u, s, vh = np.linalg.svd(A_norm, full_matrices=True)
+        L = vh[-1,:]/vh[-1,-1]
+        homography = L.reshape((3,3))
+        return homography
         
                 
 

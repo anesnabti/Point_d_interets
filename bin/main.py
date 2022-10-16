@@ -78,9 +78,18 @@ pid_cord2, img_fast_suppression, nbr_fast = np.array(PI_2. suppression_of_non_ma
 
 # PI.plot_image (img_fast_suppression2, f"Nombres de points d'interets avec suppression = {nbr_fast2}")
 
-# points_of_matching = PI.matching_blocs(descriptor, descriptor2, pid_cord2)
+points_of_matching, p1, p2 = PI.matching_blocs(descriptor, descriptor2, pid_cord2)
 
 # print (points_of_matching.shape)
 
 # PI.plot_bloc_matching(P2,descriptor, descriptor2, pid_cord2)
 
+
+ #------------------ Homography--------------#
+#h, status = cv2.findHomography(p1, p2, cv2.RANSAC, 5.0)
+#print("h", h)
+#h1 = PI.find_homography(p1,p2)
+#print("h1", h1)
+#im_out = cv2.warpPerspective(P2, h1, (P2.shape[1],P2.shape[0]))
+#cv2.imshow("Warped Image", im_out)
+#cv2.waitKey(0)
