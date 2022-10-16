@@ -154,7 +154,7 @@ class Points_d_interets :
 
     def compare_methods (self, image1, image2, image3, title1, title2, title3) : 
 
-        fig = plt.figure( figsize = (8,5))
+        fig = plt.figure( figsize = (10,8))
         fig.add_subplot(1,3,1)
         plt.imshow(image1)
         plt.axis('off')
@@ -200,12 +200,13 @@ class Points_d_interets :
 
         C = self.harris_detector("Gaussiène")[1]
         fig = plt.figure( figsize = (8,5))
-        fig.add_subplot(1,2,1)
+        # fig.add_subplot(1,2,1)
         plt.imshow(self.suppression_of_non_maximas(self.harris_detector("Gaussiène")[1])[2])
         plt.axis('off')
         plt.title(f"nombre de points d'intérets = {self.suppression_of_non_maximas(C)[1]} - Suppression des non maximas HARRIS")
         
-        fig.add_subplot(1,2,2)
+        # fig.add_subplot(1,2,2)
+        plt.figure (2)
         plt.imshow(self.harris_by_cv2(0.05)[0])
         plt.axis('off')
         plt.title(f"nombre de points d'intérets = {self.harris_by_cv2(0.05)[1]} - Harris" )
@@ -371,9 +372,8 @@ class Points_d_interets :
         output_img = np.concatenate((img_originalle, P3), axis = 1)
         offset = [img_originalle.shape[1],0]
         img_result = np.copy(output_img)
+        plt.figure (figsize=(10,12))
         for n in range (len(points_of_matching)) : 
-            # img_result = np.copy(output_img)
-            print(self.D[n])
             cord_p1 = np.array(points_of_matching[n][0])[::-1] 
             cord_p2 = np.array(points_of_matching[n][1])[::-1]
             cv2.circle (img_result, cord_p1, 3, (255,0,0), 3)
